@@ -14,11 +14,14 @@ export default class AlunoController {
   }
   //comando POST cadastrar
   async criar(req, res) {
-    const { nome, email, curso } = req.body;
-
-    if (!nome || !email || !curso) return "Preencha nome, email e curso";
-    if (!email.includes("@")) return "Informe um email válido";
-    dados = { nome, email, curso };
+    const dados = this.lerFormulario(req.body);
+    const erro = this.validarCampos(dados);
+    if (erro) {
+      const alunos = await this.model.listar();
+      return res
+        .status(400)
+        .render("alunos/index", { alunos, erro, valores: dados });
+    }
 
     try {
       await this.model.criar(dados);
@@ -56,5 +59,47 @@ export default class AlunoController {
       if (erro.code !== NAO_ENCONTRADO) throw erro;
       res.status(404).render("erro", { mensagem: "Aluno nao cadastrado" });
     }
+  }
+
+  async atualizar(req, res) {
+    const { id } = Number(req.params.id);
+    const dados = this.lerFormulario(req.body);
+    const erro = this.validarCampos(dados);
+    if (erro) {
+      return res
+        .status(400)
+        .render("alunos/editar", { aluno: { id, ...dados }, erro });
+    }
+    try {
+      await this.model.atualizar(id, dados);
+      res.redirect("/alunos");
+    } catch (erro) {
+      if (erro.code === NAO_ENCONTRADO) {
+        return res
+          .status(404)
+          .render("erro", { mensagem: "Aluno não encontrado!" });
+      }
+      if (erro.code === EMAIL_REPETIDO) {
+        return res.status(409).render("alunos/editar", {
+          aluno: { id, ...dados },
+          erro: "Já existe um aluno com esse e-mail",
+        });
+        throw erro;
+      }
+    }
+  }
+
+  validarCampos({ nome, email, curso }) {
+    if (!nome || !email || !curso) return "Preencha nome, email e curso";
+    if (!email.includes("@")) return "Informe um email válido";
+    return null;
+  }
+  // Pega só os campos que interessam e remove espaços nas pontas
+  lerFormulario(body) {
+    return {
+      nome: (body.nome ?? "").trim(),
+      email: (body.email ?? "").trim().toLowerCase(),
+      curso: (body.curso ?? "").trim(),
+    };
   }
 }
