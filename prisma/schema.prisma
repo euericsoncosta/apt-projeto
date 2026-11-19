@@ -1,16 +1,28 @@
-generator client{
-    provider = "prisma-client-js"
+// Gerador do Prisma Client: cria o código que usamos para acessar o banco
+generator client {
+  provider = "prisma-client-js"
 }
-// Banco de dados: SQLite 
-datasource db{
-    provider = "sqlite"
-    url = env("DATABASE_URL")
+
+// Banco de dados: SQLite (um arquivo dentro da pasta prisma)
+datasource db {
+  provider = "sqlite"
+  // Lê o endereço do banco da variável DATABASE_URL do arquivo .env
+  url      = env("DATABASE_URL")
 }
-model Aluno{
-    id Int @id @default(autoincrement())
-    nome String
-    email String @unique
-    idade Int
-    criadoEM DateTime @default(now())
-    @@map("alunos")
+
+// Cada model vira uma tabela no banco
+model Aluno {
+  // @id = chave primária; autoincrement = o banco numera sozinho (1, 2, 3...)
+  id       Int      @id @default(autoincrement())
+  nome     String
+  // @unique = não deixa dois alunos com o mesmo e-mail (gera o erro P2002)
+  email    String   @unique
+  // Campo "curso" conforme o PDF (antes estava "idade", que o código nunca enviava)
+  curso    String
+  // Grava a data e hora do cadastro automaticamente
+  criadoEm DateTime @default(now())
+
+  // Mantém o nome da tabela como "alunos" (já criada na migração inicial).
+  // No código continua sendo prisma.aluno.
+  @@map("alunos")
 }
